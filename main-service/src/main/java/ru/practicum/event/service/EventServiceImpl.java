@@ -67,7 +67,7 @@ public class EventServiceImpl implements EventService {
                 categoryService.getById(categoryId);
             }
         }
-        List<LocalDateTime> ranges = eventUpdatePreparation(rangeStart, rangeEnd);
+        List<LocalDateTime> ranges = eventDatePreparation(rangeStart, rangeEnd);
 
         Sort sort = Sort.sort(Event.class).by(Event::getEventDate).descending();
 
@@ -285,7 +285,7 @@ public class EventServiceImpl implements EventService {
         if (paid == null) {
             paid = true;
         }
-        List<LocalDateTime> ranges = eventUpdatePreparation(rangeStart, rangeEnd);
+        List<LocalDateTime> ranges = eventDatePreparation(rangeStart, rangeEnd);
 
         List<Event> events = repository.findAllByParam(
                 text,
@@ -366,7 +366,7 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private List<LocalDateTime> eventUpdatePreparation(String rangeStart, String rangeEnd) {
+    private List<LocalDateTime> eventDatePreparation(String rangeStart, String rangeEnd) {
         LocalDateTime startDate = LocalDateTime.now();
         LocalDateTime endDate = LocalDateTime.parse("5000-01-01 00:00:00",
                 DateTimeFormatter.ofPattern(DATE_TIME_STRING));

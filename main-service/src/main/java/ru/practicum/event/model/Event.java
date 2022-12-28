@@ -5,6 +5,7 @@ import ru.practicum.category.model.Category;
 import ru.practicum.user.model.User;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Getter
@@ -21,7 +22,7 @@ public class Event {
     @Column(name = "event_id")
     private Long id;
 
-    @NonNull
+    @NotNull
     @Column(name = "annotation", nullable = false, length = 2000)
     private String annotation;
 
@@ -35,8 +36,8 @@ public class Event {
     @Column(name = "create_date")
     private LocalDateTime createdOn;
 
-    @NonNull
-    @Column(name = "description", length = 7000)
+    @NotNull
+    @Column(name = "description", length = 4000)
     private String description;
 
     @Column(name = "event_date")
@@ -65,7 +66,7 @@ public class Event {
     @Enumerated(EnumType.STRING)
     private State state;
 
-    @NonNull
+    @NotNull
     @Column(name = "title", nullable = false, length = 120)
     private String title;
     private int views;

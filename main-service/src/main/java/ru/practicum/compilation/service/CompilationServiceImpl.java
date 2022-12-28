@@ -66,6 +66,7 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     public void delete(Long compilationId) {
+        getByIdAndThrow(compilationId);
         compilationRepository.deleteById(compilationId);
         log.info("Удалена подборка c id {}", compilationId);
     }
@@ -74,6 +75,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional
     public void deleteEvent(Long compilationId, Long eventId) {
         Compilation compilation = getByIdAndThrow(compilationId);
+        eventService.getById(eventId);
         compilationRepository.deleteEvent(compilationId, eventId);
         log.info("From compilation {} deleted event {}", compilation, eventId);
     }
@@ -82,6 +84,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional
     public void addEvent(Long compilationId, Long eventId) {
         Compilation compilation = getByIdAndThrow(compilationId);
+        eventService.getById(eventId);
         compilationRepository.addEvent(compilationId, eventId);
         log.info("To compilation {} added event {}", compilation, eventId);
     }
