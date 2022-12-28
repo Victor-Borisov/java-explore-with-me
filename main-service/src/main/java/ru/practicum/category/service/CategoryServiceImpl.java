@@ -76,6 +76,7 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findById(categoryId).orElseThrow(() ->
                 new NotFoundException("Category {} not found", categoryId));
     }
+
     void checkIfExistsWithSameNameAndAnotherId(String name, Long categoryId) {
         Optional<Category> categoryWithSameName = categoryRepository.findByName(name);
         if (categoryWithSameName.isPresent() && !categoryWithSameName.get().getId().equals(categoryId)) {

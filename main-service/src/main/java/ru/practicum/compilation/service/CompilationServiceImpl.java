@@ -47,7 +47,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     @Transactional
     public CompilationDto add(NewCompilationDto newCompilationDto) {
-        if(newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
+        if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
             checkIsEventsExist(newCompilationDto.getEvents());
         }
         Compilation compilation = CompilationMapper.fromNewCompilationDto(newCompilationDto);
@@ -109,6 +109,7 @@ public class CompilationServiceImpl implements CompilationService {
     private Pageable getPageable(Integer from, Integer size, Sort sort) {
         return new PageableRequest(from, size, sort);
     }
+
     public void checkIsEventsExist(List<Long> eventIdList) {
         for (Long eventId : eventIdList) {
             eventService.getById(eventId);
