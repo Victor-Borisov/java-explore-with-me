@@ -21,7 +21,6 @@ import ru.practicum.request.model.Status;
 import ru.practicum.request.service.RequestService;
 import ru.practicum.user.dto.UserMapper;
 import ru.practicum.user.service.UserService;
-import ru.practicum.utils.DateFormatterCustom;
 import ru.practicum.utils.PageableRequest;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,7 +30,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
