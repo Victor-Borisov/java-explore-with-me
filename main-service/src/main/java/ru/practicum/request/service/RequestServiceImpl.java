@@ -48,7 +48,7 @@ public class RequestServiceImpl implements RequestService {
         if (!event.getState().equals(State.PUBLISHED)) {
             throw new ValidationException("Participation in unpublished event prohibited");
         }
-        if (event.getConfirmedRequests() == event.getParticipantLimit()) {
+        if (event.getConfirmedRequests() == event.getParticipantLimit() && event.getParticipantLimit() != 0) {
             throw new ValidationException("Participation request limit reached");
         }
         Status status;

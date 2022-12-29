@@ -23,7 +23,7 @@ public class EventClient {
     private final RestTemplate template;
     private final DateFormatterCustom formatter;
 
-    public EventClient(@Value("${EWM_STAT_URL}") String url,
+    public EventClient(@Value("${ewm-stat.url}") String url,
                        RestTemplateBuilder template,
                        DateFormatterCustom formatter) {
         this.formatter = formatter;

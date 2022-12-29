@@ -358,7 +358,7 @@ public class EventServiceImpl implements EventService {
         if (eventDto.getPaid() != null) {
             event.setPaid(eventDto.getPaid());
         }
-        if (eventDto.getParticipantLimit() != 0) {
+        if (eventDto.getParticipantLimit() != null) {
             event.setParticipantLimit(eventDto.getParticipantLimit());
         }
         if (eventDto.getTitle() != null) {
@@ -370,10 +370,10 @@ public class EventServiceImpl implements EventService {
         LocalDateTime startDate = LocalDateTime.now();
         LocalDateTime endDate = LocalDateTime.parse("5000-01-01 00:00:00",
                 DateTimeFormatter.ofPattern(DATE_TIME_STRING));
-        if (rangeEnd != null) {
+        if (rangeStart != null) {
             startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern(DATE_TIME_STRING));
         }
-        if (rangeStart != null) {
+        if (rangeEnd != null) {
             endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern(DATE_TIME_STRING));
         }
         if (startDate.isAfter(endDate)) {
