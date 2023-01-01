@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "events")
+@EqualsAndHashCode(exclude = "compilations")
 public class Event {
 
     @Id
@@ -30,9 +31,6 @@ public class Event {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @Column(name = "confirmed_requests")
-    private int confirmedRequests;
-
     @Column(name = "create_date")
     private LocalDateTime createdOn;
 
@@ -47,7 +45,6 @@ public class Event {
     @JoinColumn(name = "initiator_id")
     private User initiator;
 
-    @Embedded
     @AttributeOverrides({@AttributeOverride(name = "lat", column = @Column(name = "lat")),
             @AttributeOverride(name = "lon", column = @Column(name = "lon"))})
     private Location location;

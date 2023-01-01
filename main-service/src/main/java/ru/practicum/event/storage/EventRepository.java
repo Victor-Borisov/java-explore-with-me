@@ -9,6 +9,7 @@ import ru.practicum.event.model.State;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
 
@@ -34,9 +35,10 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
             " AND e.paid = :paid " +
             " AND (e.eventDate BETWEEN :rangeStart AND :rangeEnd) " +
             " AND (" +
-            " (:onlyAvailable = true AND e.participantLimit = 0) OR " +
-            " (:onlyAvailable = true AND e.participantLimit > e.confirmedRequests) OR " +
-            " (:onlyAvailable = false)" +
+            " (:onlyAvailable = true AND e.participantLimit = 0) " +
+            "OR (:onlyAvailable = true AND e.participantLimit > " +
+            "(SELECT COUNT(r.id) FROM Request r WHERE r.status = 'CONFIRMED' AND r.event = e)) " +
+            "OR (:onlyAvailable = false)" +
             ") "
     )
     List<Event> findAllByParam(String text,
@@ -46,4 +48,6 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
                                LocalDateTime rangeEnd,
                                Boolean onlyAvailable,
                                Pageable pageable);
+    @Query("SELECT e FROM Event e WHERE e.id IN :events")
+    Set<Event> findAllByEvents(Set<Long> events);
 }

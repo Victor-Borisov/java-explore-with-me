@@ -11,13 +11,16 @@ import ru.practicum.compilation.dto.CompilationMapper;
 import ru.practicum.compilation.dto.NewCompilationDto;
 import ru.practicum.compilation.model.Compilation;
 import ru.practicum.compilation.storage.CompilationRepository;
+import ru.practicum.event.dto.EventMapper;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.service.EventService;
 import ru.practicum.exceptions.NotFoundException;
+import ru.practicum.request.service.RequestService;
 import ru.practicum.utils.PageableRequest;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -25,47 +28,50 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CompilationServiceImpl implements CompilationService {
     private final EventService eventService;
+    private final RequestService requestService;
     private final CompilationRepository compilationRepository;
 
     @Override
-    public List<CompilationDto> getAll(boolean pinned, Integer from, Integer size) {
+    public List<CompilationDto> getAll(Boolean pinned, int from, int size) {
         List<Compilation> compilations = compilationRepository.findAllByPinnedIs(pinned,
                 getPageable(from, size, Sort.unsorted()));
         log.info("List of compilations {} retrieved", compilations);
 
-        return compilations.stream().map(CompilationMapper::toDto).collect(Collectors.toList());
+        return compilations.stream().map((Compilation compilation) -> {
+                    List<Long> eventIds = compilation.getEvents().stream()
+                            .map(EventMapper::toId).collect(Collectors.toList());
+                    Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
+                    return CompilationMapper.toDto(compilation, confirmedRequests);
+                }
+        ).collect(Collectors.toList());
     }
 
     @Override
-    public CompilationDto getById(Long compilationId) {
+    public CompilationDto getById(long compilationId) {
         Compilation compilation = getByIdAndThrow(compilationId);
+        List<Long> eventIds = compilation.getEvents().stream().map(EventMapper::toId).collect(Collectors.toList());
+        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
         log.info("Compilation {} retrieved", compilation);
 
-        return CompilationMapper.toDto(compilation);
+        return CompilationMapper.toDto(compilation, confirmedRequests);
     }
 
     @Override
     @Transactional
     public CompilationDto add(NewCompilationDto newCompilationDto) {
-        if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
-            checkIsEventsExist(newCompilationDto.getEvents());
-        }
         Compilation compilation = CompilationMapper.fromNewCompilationDto(newCompilationDto);
-        List<Event> eventList = Collections.emptyList();
-        if (newCompilationDto.getEvents() != null || !newCompilationDto.getEvents().isEmpty()) {
-            eventList = newCompilationDto.getEvents()
-                    .stream().map(eventService::getById)
-                    .collect(Collectors.toList());
-        }
+        Set<Event> eventList = eventService.getAllByEvents(newCompilationDto.getEvents());
         compilation.setEvents(eventList);
         compilation = compilationRepository.save(compilation);
+        List<Long> eventIds = compilation.getEvents().stream().map(EventMapper::toId).collect(Collectors.toList());
+        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
         log.info("Compilation {} added", compilation);
 
-        return CompilationMapper.toDto(compilation);
+        return CompilationMapper.toDto(compilation, confirmedRequests);
     }
 
     @Override
-    public void delete(Long compilationId) {
+    public void delete(long compilationId) {
         getByIdAndThrow(compilationId);
         compilationRepository.deleteById(compilationId);
         log.info("Удалена подборка c id {}", compilationId);
@@ -73,46 +79,42 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     @Transactional
-    public void deleteEvent(Long compilationId, Long eventId) {
+    public void deleteEvent(long compilationId, long eventId) {
         Compilation compilation = getByIdAndThrow(compilationId);
-        eventService.getById(eventId);
-        compilationRepository.deleteEvent(compilationId, eventId);
+        compilation.getEvents().remove(eventService.getById(eventId));
         log.info("From compilation {} deleted event {}", compilation, eventId);
     }
 
     @Override
     @Transactional
-    public void addEvent(Long compilationId, Long eventId) {
+    public void addEvent(long compilationId, long eventId) {
         Compilation compilation = getByIdAndThrow(compilationId);
-        eventService.getById(eventId);
-        compilationRepository.addEvent(compilationId, eventId);
+        compilation.getEvents().add(eventService.getById(eventId));
         log.info("To compilation {} added event {}", compilation, eventId);
     }
 
     @Override
     @Transactional
-    public void pinCompilation(boolean pin, Long compilationId) {
-        compilationRepository.pinningCompilation(pin, compilationId);
+    public void pin(long compilationId) {
         Compilation compilation = getByIdAndThrow(compilationId);
-        if (pin) {
-            log.info("Compilation {} pinned", compilation);
-        } else {
-            log.info("Compilation {} pinned out", compilation);
-        }
+        compilation.setPinned(true);
+        log.info("Compilation {} pinned", compilation);
     }
 
-    private Compilation getByIdAndThrow(Long compilationId) {
+    @Override
+    @Transactional
+    public void unpin(long compilationId) {
+        Compilation compilation = getByIdAndThrow(compilationId);
+        compilation.setPinned(false);
+        log.info("Compilation {} unpinned", compilation);
+    }
+
+    private Compilation getByIdAndThrow(long compilationId) {
         return compilationRepository.findById(compilationId).orElseThrow(() ->
                 new NotFoundException("Compilation {} not found", compilationId));
     }
 
-    private Pageable getPageable(Integer from, Integer size, Sort sort) {
+    private Pageable getPageable(int from, int size, Sort sort) {
         return new PageableRequest(from, size, sort);
-    }
-
-    public void checkIsEventsExist(List<Long> eventIdList) {
-        for (Long eventId : eventIdList) {
-            eventService.getById(eventId);
-        }
     }
 }

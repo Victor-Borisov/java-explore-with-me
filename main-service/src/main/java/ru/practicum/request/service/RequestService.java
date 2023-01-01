@@ -4,18 +4,23 @@ import ru.practicum.request.dto.ParticipationRequestDto;
 import ru.practicum.request.model.Request;
 
 import java.util.List;
+import java.util.Map;
 
 public interface RequestService {
 
-    ParticipationRequestDto addRequest(Long userId, Long eventId);
+    ParticipationRequestDto addRequest(long userId, long eventId);
 
     ParticipationRequestDto cancelRequest(Long userId, Long requestId);
 
-    List<ParticipationRequestDto> getAllByUserRequests(Long userId);
+    List<ParticipationRequestDto> getAllByUserRequests(long userId);
 
     List<ParticipationRequestDto> getAllByEventRequests(Long eventId);
 
     Request getByRequestId(Long requestId);
+
+    Long getConfirmedRequests(long eventId);
+
+    Map<Long, Long> getCountConfirmedByEventIdList(List<Long> events);
 
     void saveRequest(Request request);
 

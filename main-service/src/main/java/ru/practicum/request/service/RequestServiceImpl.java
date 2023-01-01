@@ -16,8 +16,11 @@ import ru.practicum.request.model.Status;
 import ru.practicum.request.storage.RequestRepository;
 import ru.practicum.user.service.UserService;
 
+import java.math.BigInteger;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -31,16 +34,17 @@ public class RequestServiceImpl implements RequestService {
     private final RequestRepository requestRepository;
 
     @Override
-    public List<ParticipationRequestDto> getAllByUserRequests(Long userId) {
+    public List<ParticipationRequestDto> getAllByUserRequests(long userId) {
         List<Request> requests = requestRepository.findAllByRequesterId(userId);
         log.info("Retrieved request list of user with id: {}", userId);
+
         return requests.stream()
                 .map(RequestMapper::toRequestDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public ParticipationRequestDto addRequest(Long userId, Long eventId) {
+    public ParticipationRequestDto addRequest(long userId, long eventId) {
         Event event = eventService.getById(eventId);
         if (event.getInitiator().getId().equals(userId)) {
             throw new ValidationException("Participation request for own event prohibited");
@@ -48,7 +52,7 @@ public class RequestServiceImpl implements RequestService {
         if (!event.getState().equals(State.PUBLISHED)) {
             throw new ValidationException("Participation in unpublished event prohibited");
         }
-        if (event.getConfirmedRequests() == event.getParticipantLimit() && event.getParticipantLimit() != 0) {
+        if (getConfirmedRequests(eventId).equals((long) event.getParticipantLimit()) && event.getParticipantLimit() != 0) {
             throw new ValidationException("Participation request limit reached");
         }
         Status status;
@@ -56,7 +60,6 @@ public class RequestServiceImpl implements RequestService {
             status = Status.PENDING;
         } else {
             status = Status.CONFIRMED;
-            eventService.increaseConfirmedRequestsPrivate(event);
         }
         Request request = Request.builder()
                 .status(status)
@@ -77,9 +80,6 @@ public class RequestServiceImpl implements RequestService {
         }
         if (request.getStatus().equals(Status.REJECTED) || request.getStatus().equals(Status.CANCELED)) {
             throw new ValidationException("Request already canceled/rejected");
-        }
-        if (request.getStatus().equals(Status.CONFIRMED)) {
-            eventService.decreaseConfirmedRequestsPrivate(eventService.getById(request.getEvent().getId()));
         }
         request.setStatus(Status.CANCELED);
         log.info("Request on event {} canceled", requestId);
@@ -102,6 +102,21 @@ public class RequestServiceImpl implements RequestService {
 
         return requestRepository.findById(requestId).orElseThrow(() ->
                 new NotFoundException("Request {} not found", requestId));
+    }
+
+    @Override
+    public Long getConfirmedRequests(long eventId) {
+        return requestRepository.getCountConfirmedByEventId(eventId);
+    }
+
+    @Override
+    public Map<Long, Long> getCountConfirmedByEventIdList(List<Long> events) {
+        Map<Long, Long> results = new HashMap<>();
+        List<Object[]> countList = requestRepository.getCountConfirmedByEventIdList(events);
+        for (Object[] count: countList) {
+            results.put(((BigInteger) count[0]).longValue(), ((BigInteger) count[1]).longValue());
+        }
+        return results;
     }
 
     @Override

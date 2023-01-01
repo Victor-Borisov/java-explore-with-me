@@ -1,6 +1,6 @@
 package ru.practicum.user.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.exceptions.ConflictException;
@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getAll(List<Long> ids, Integer from, Integer size) {
+    public List<UserDto> getAll(List<Long> ids, int from, int size) {
         List<User> users = userRepository.findAllById(ids);
         log.info("User list retrieved {}", users);
 
@@ -40,14 +40,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void delete(Long userId) {
+    public void delete(long userId) {
         getUserById(userId);
         userRepository.deleteById(userId);
         log.info("User with id {} deleted", userId);
     }
 
     @Override
-    public User getUserById(Long userId) {
+    public User getUserById(long userId) {
         return userRepository.findById(userId).orElseThrow(() ->
                 new NotFoundException("User with id {} not found", userId));
     }

@@ -1,10 +1,10 @@
 package ru.practicum.event.dto;
 
 import lombok.experimental.UtilityClass;
-import ru.practicum.category.model.Category;
 import ru.practicum.category.dto.CategoryDto;
-import ru.practicum.event.model.State;
+import ru.practicum.category.model.Category;
 import ru.practicum.event.model.Event;
+import ru.practicum.event.model.State;
 import ru.practicum.user.dto.UserShortDto;
 import ru.practicum.utils.DateFormatterCustom;
 
@@ -12,10 +12,9 @@ import java.time.LocalDateTime;
 
 @UtilityClass
 public class EventMapper {
-
     private final DateFormatterCustom formatter = new DateFormatterCustom();
 
-    public FullEventDto toFullDto(Event event) {
+    public FullEventDto toFullDto(Event event, Long confirmedRequests) {
         CategoryDto categoryDto = CategoryDto.builder()
                 .id(event.getCategory().getId())
                 .name(event.getCategory().getName())
@@ -28,7 +27,7 @@ public class EventMapper {
                 .id(event.getId())
                 .annotation(event.getAnnotation())
                 .category(categoryDto)
-                .confirmedRequests(event.getConfirmedRequests())
+                .confirmedRequests(confirmedRequests)
                 .createdOn(formatter.dateToString(event.getCreatedOn()))
                 .description(event.getDescription())
                 .eventDate(formatter.dateToString(event.getEventDate()))
@@ -44,7 +43,7 @@ public class EventMapper {
                 .build();
     }
 
-    public ShortEventDto toShortDto(Event event) {
+    public ShortEventDto toShortDto(Event event, Long confirmedRequests) {
         CategoryDto categoryDto = CategoryDto.builder()
                 .id(event.getCategory().getId())
                 .name(event.getCategory().getName())
@@ -58,7 +57,7 @@ public class EventMapper {
                 .id(event.getId())
                 .annotation(event.getAnnotation())
                 .category(categoryDto)
-                .confirmedRequests(event.getConfirmedRequests())
+                .confirmedRequests(confirmedRequests)
                 .eventDate(formatter.dateToString(event.getEventDate()))
                 .initiator(userShortDto)
                 .paid(event.getPaid())
@@ -71,7 +70,6 @@ public class EventMapper {
         return Event.builder()
                 .annotation(newEventDto.getAnnotation())
                 .category(Category.builder().id(newEventDto.getCategory()).build())
-                .confirmedRequests(0)
                 .createdOn(LocalDateTime.now())
                 .description(newEventDto.getDescription())
                 .eventDate(formatter.stringToDate(newEventDto.getEventDate()))
@@ -90,7 +88,6 @@ public class EventMapper {
                 .id(newEventDto.getEventId())
                 .annotation(newEventDto.getAnnotation())
                 .category(Category.builder().id(newEventDto.getCategory()).build())
-                .confirmedRequests(0)
                 .createdOn(LocalDateTime.now())
                 .description(newEventDto.getDescription())
                 .eventDate(formatter.stringToDate(newEventDto.getEventDate()))
@@ -108,7 +105,6 @@ public class EventMapper {
         return Event.builder()
                 .annotation(newEventDto.getAnnotation())
                 .category(Category.builder().id(newEventDto.getCategory()).build())
-                .confirmedRequests(0)
                 .createdOn(LocalDateTime.now())
                 .description(newEventDto.getDescription())
                 .eventDate(formatter.stringToDate(newEventDto.getEventDate()))
@@ -120,6 +116,10 @@ public class EventMapper {
                 .title(newEventDto.getTitle())
                 .views(0)
                 .build();
+    }
+
+    public Long toId(Event event) {
+        return event.getId();
     }
 
 }

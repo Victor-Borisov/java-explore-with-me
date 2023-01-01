@@ -1,11 +1,11 @@
 package ru.practicum.event.dto;
 
 import lombok.*;
-import org.hibernate.validator.constraints.Length;
 import ru.practicum.event.model.Location;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
 
 @Getter
 @Setter
@@ -13,7 +13,7 @@ import javax.validation.constraints.Positive;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateEventRequest {
-    @Length(min = 20, max = 2000)
+    @Size(max = 2000)
     private String annotation;
 
     @Positive
@@ -30,7 +30,7 @@ public class UpdateEventRequest {
     private int participantLimit;
     private Boolean requestModeration;
 
-    @Length(min = 3, max = 120)
+    @Size(max = 120)
     private String title;
 
 }

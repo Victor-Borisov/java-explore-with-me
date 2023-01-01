@@ -1,6 +1,6 @@
 package ru.practicum.event.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -29,14 +29,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
-@AllArgsConstructor
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class EventServiceImpl implements EventService {
     private final CategoryService categoryService;
     private final EventRepository repository;
@@ -48,7 +46,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     public List<FullEventDto> getAllByAdmin(Long[] users, String[] states, Long[] categories,
-                                            String rangeStart, String rangeEnd, int from, int size) {
+                                            LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size) {
         if (users != null) {
             for (Long userId : users) {
                 userService.getUserById(userId);
@@ -73,15 +71,17 @@ public class EventServiceImpl implements EventService {
 
         List<Event> events = repository.findAllByUsersAndStatesAndCategories(users, stateList, categories,
                 ranges.get(0), ranges.get(1), getPageable(from, size, sort));
+        List<Long> eventIds = events.stream().map(EventMapper::toId).collect(Collectors.toList());
+        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
         log.info("List of events {} is retrieved by administrator", events);
         return events.stream()
-                .map(EventMapper::toFullDto)
+                .map((Event event) -> EventMapper.toFullDto(event, confirmedRequests.get(event.getId())))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public FullEventDto updateByAdmin(Long eventId, AdminUpdateEventRequest eventDto) {
+    public FullEventDto updateByAdmin(long eventId, AdminUpdateEventRequest eventDto) {
         Event event = getByIdAndThrow(eventId);
         eventUpdatePreparation(EventMapper.fromAdminUpdateEventRequest(eventDto), event);
         Optional.ofNullable(eventDto.getLocation()).ifPresent(event::setLocation);
@@ -89,12 +89,12 @@ public class EventServiceImpl implements EventService {
         repository.save(event);
         log.info("Event {} updated by admin", eventId);
 
-        return EventMapper.toFullDto(event);
+        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
     }
 
     @Override
     @Transactional
-    public FullEventDto publishEventAdmin(Long eventId) {
+    public FullEventDto publishEventAdmin(long eventId) {
         Event event = getByIdAndThrow(eventId);
         if (event.getEventDate().plusHours(1).isAfter(LocalDateTime.now()) &&
                 event.getState() == State.PENDING) {
@@ -104,12 +104,12 @@ public class EventServiceImpl implements EventService {
             log.info("Event {} published by admin", eventId);
         }
 
-        return EventMapper.toFullDto(event);
+        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
     }
 
     @Override
     @Transactional
-    public FullEventDto rejectEventAdmin(Long eventId) {
+    public FullEventDto rejectEventAdmin(long eventId) {
         Event event = getByIdAndThrow(eventId);
         if (event.getState() == State.PENDING) {
             event.setState(State.CANCELED);
@@ -117,25 +117,27 @@ public class EventServiceImpl implements EventService {
             log.info("Event {} rejected by admin", eventId);
         }
 
-        return EventMapper.toFullDto(event);
+        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
     }
 
     @Override
-    public List<ShortEventDto> getAllPrivate(Long userId, Integer from, Integer size) {
+    public List<ShortEventDto> getAllPrivate(long userId, int from, int size) {
         List<Event> events = repository.findAllByInitiatorId(userId, getPageable(from, size, Sort.unsorted()));
+        List<Long> eventIds = events.stream().map(EventMapper::toId).collect(Collectors.toList());
+        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
         log.info("List of events {} retrieved", events);
         return events.stream()
-                .map(EventMapper::toShortDto)
+                .map((Event event) -> EventMapper.toShortDto(event, confirmedRequests.get(event.getId())))
                 .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public FullEventDto updatePrivate(Long userId, UpdateEventRequest eventDto) {
+    public FullEventDto updatePrivate(long userId, UpdateEventRequest eventDto) {
         eventDateValidation(eventDto.getEventDate());
         Event event = getByIdAndThrow(eventDto.getEventId());
         eventUpdatePreparation(EventMapper.fromUpdateEventRequest(eventDto), event);
-        if (!userId.equals(event.getInitiator().getId())) {
+        if (userId != event.getInitiator().getId()) {
             throw new ValidationException("Event can be edited only by initiator");
         }
         if (event.getState() == State.PUBLISHED) {
@@ -147,12 +149,12 @@ public class EventServiceImpl implements EventService {
         repository.save(event);
         log.info("Event {} updated", event);
 
-        return EventMapper.toFullDto(event);
+        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(event.getId()));
     }
 
     @Override
     @Transactional
-    public FullEventDto addPrivate(Long userId, NewEventDto newEventDto) {
+    public FullEventDto addPrivate(long userId, NewEventDto newEventDto) {
         eventDateValidation(newEventDto.getEventDate());
         Event event = EventMapper.fromNewDto(newEventDto);
         event.setCategory(CategoryMapper.fromCategoryDto(categoryService.getById(newEventDto.getCategory())));
@@ -160,25 +162,25 @@ public class EventServiceImpl implements EventService {
         repository.save(event);
         log.info("Event {} added", event);
 
-        return EventMapper.toFullDto(event);
+        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(event.getId()));
     }
 
     @Override
-    public FullEventDto getByIdPrivate(Long userId, Long eventId) {
+    public FullEventDto getByIdPrivate(long userId, long eventId) {
         Event event = repository.findByInitiatorIdAndId(userId, eventId);
         if (event == null) {
             throw new NotFoundException("Event {} not found", eventId);
         }
         log.info("Event {} retrieved", eventId);
 
-        return EventMapper.toFullDto(event);
+        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
     }
 
     @Override
     @Transactional
-    public FullEventDto cancelPrivate(Long userId, Long eventId) {
+    public FullEventDto cancelPrivate(long userId, long eventId) {
         Event event = getByIdAndThrow(eventId);
-        if (!userId.equals(event.getInitiator().getId())) {
+        if (userId != event.getInitiator().getId()) {
             throw new ValidationException("Event can be canceled only by initiator");
         }
         if (event.getState().equals(State.CANCELED) || event.getState().equals(State.PUBLISHED)) {
@@ -188,13 +190,13 @@ public class EventServiceImpl implements EventService {
         repository.save(event);
         log.info("Event {} canceled", eventId);
 
-        return EventMapper.toFullDto(event);
+        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
     }
 
     @Override
-    public List<ParticipationRequestDto> getEventRequestsPrivate(Long userId, Long eventId) {
+    public List<ParticipationRequestDto> getEventRequestsPrivate(long userId, long eventId) {
         Event event = getByIdAndThrow(eventId);
-        if (!userId.equals(event.getInitiator().getId())) {
+        if (userId != event.getInitiator().getId()) {
             throw new ValidationException("Only initiator can retrieve requests on the event");
         }
         List<ParticipationRequestDto> requests = requestService.getAllByEventRequests(eventId);
@@ -205,19 +207,19 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public ParticipationRequestDto confirmRequestPrivate(Long userId, Long eventId, Long requestId) {
+    public ParticipationRequestDto confirmRequestPrivate(long userId, long eventId, long requestId) {
         Event event = getByIdAndThrow(eventId);
         Request request = requestService.getByRequestId(requestId);
         if (event.getParticipantLimit() == 0 || !event.getRequestModeration()) {
             return RequestMapper.toRequestDto(request);
         }
-        if (event.getConfirmedRequests() == event.getParticipantLimit()) {
+        Long confirmedRequests = requestService.getConfirmedRequests(eventId);
+        if (confirmedRequests.equals((long) event.getParticipantLimit())) {
             log.info("Limit of requests on participation in {} reached", eventId);
             throw new ValidationException("Limit of requests on participation reached");
         }
-        increaseConfirmedRequestsPrivate(event);
         request.setStatus(Status.CONFIRMED);
-        if (event.getConfirmedRequests() == event.getParticipantLimit()) {
+        if (confirmedRequests.equals((long) event.getParticipantLimit())) {
             requestService.rejectAllRequests(eventId);
         }
         requestService.saveRequest(request);
@@ -228,7 +230,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
-    public ParticipationRequestDto rejectRequestPrivate(Long userId, Long eventId, Long requestId) {
+    public ParticipationRequestDto rejectRequestPrivate(long userId, long eventId, long requestId) {
         getByIdAndThrow(eventId);
         Request request = requestService.getByRequestId(requestId);
         if (request.getStatus() == Status.REJECTED || request.getStatus() == Status.CANCELED) {
@@ -242,21 +244,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public void increaseConfirmedRequestsPrivate(Event event) {
-        event.setConfirmedRequests(event.getConfirmedRequests() + 1);
-        repository.save(event);
-    }
-
-    @Override
-    public void decreaseConfirmedRequestsPrivate(Event event) {
-        if (event.getConfirmedRequests() > 0) {
-            event.setConfirmedRequests(event.getConfirmedRequests() - 1);
-            repository.save(event);
-        }
-    }
-
-    @Override
-    public Event getById(Long eventId) {
+    public Event getById(long eventId) {
         return getByIdAndThrow(eventId);
     }
 
@@ -264,8 +252,8 @@ public class EventServiceImpl implements EventService {
     public List<ShortEventDto> getAllPublic(String text,
                                             Long[] categories,
                                             Boolean paid,
-                                            String rangeStart,
-                                            String rangeEnd,
+                                            LocalDateTime rangeStart,
+                                            LocalDateTime rangeEnd,
                                             Boolean onlyAvailable,
                                             String sortType,
                                             Integer from,
@@ -296,22 +284,29 @@ public class EventServiceImpl implements EventService {
                 onlyAvailable,
                 getPageable(from / size, size, sort));
         setViews(events);
+        List<Long> eventIds = events.stream().map(EventMapper::toId).collect(Collectors.toList());
+        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
         log.info("List of events {} retrieved", events);
 
         return events.stream()
-                .map(EventMapper::toShortDto)
+                .map((Event event) -> EventMapper.toShortDto(event, confirmedRequests.get(event.getId())))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public FullEventDto getByIdPublic(Long eventId) {
+    public FullEventDto getByIdPublic(long eventId) {
         Event event = repository.findByIdAndStateLike(eventId, State.PUBLISHED);
         if (event == null) {
             throw new NotFoundException("Event {} not found", eventId);
         }
         setViews(List.of(event));
         log.info("Event {} retrieved", eventId);
-        return EventMapper.toFullDto(event);
+        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
+    }
+
+    @Override
+    public Set<Event> getAllByEvents(Set<Long> events) {
+        return repository.findAllByEvents(events);
     }
 
     private void setViews(List<Event> events) {
@@ -325,7 +320,7 @@ public class EventServiceImpl implements EventService {
         });
     }
 
-    private Event getByIdAndThrow(Long eventId) {
+    private Event getByIdAndThrow(long eventId) {
         return repository.findById(eventId).orElseThrow(() ->
                 new NotFoundException("Event {} not found", eventId));
     }
@@ -338,7 +333,7 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private Pageable getPageable(Integer from, Integer size, Sort sort) {
+    private Pageable getPageable(int from, int size, Sort sort) {
         return new PageableRequest(from, size, sort);
     }
 
@@ -366,15 +361,15 @@ public class EventServiceImpl implements EventService {
         }
     }
 
-    private List<LocalDateTime> eventDatePreparation(String rangeStart, String rangeEnd) {
+    private List<LocalDateTime> eventDatePreparation(LocalDateTime rangeStart, LocalDateTime rangeEnd) {
         LocalDateTime startDate = LocalDateTime.now();
         LocalDateTime endDate = LocalDateTime.parse("5000-01-01 00:00:00",
                 DateTimeFormatter.ofPattern(DATE_TIME_STRING));
         if (rangeStart != null) {
-            startDate = LocalDateTime.parse(rangeStart, DateTimeFormatter.ofPattern(DATE_TIME_STRING));
+            startDate = rangeStart;
         }
         if (rangeEnd != null) {
-            endDate = LocalDateTime.parse(rangeEnd, DateTimeFormatter.ofPattern(DATE_TIME_STRING));
+            endDate = rangeEnd;
         }
         if (startDate.isAfter(endDate)) {
             throw new ValidationException("rangeStart must not be after rangeEnd");

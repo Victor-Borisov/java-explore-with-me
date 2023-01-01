@@ -31,7 +31,7 @@ public class CategoryAdminController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable("id") Long categoryId) {
+    public void delete(@PathVariable("id") long categoryId) {
         log.info("Called delete");
 
         categoryService.delete(categoryId);

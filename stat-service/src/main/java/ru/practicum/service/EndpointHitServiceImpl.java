@@ -1,6 +1,6 @@
 package ru.practicum.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.practicum.storage.EndpointHitRepository;
@@ -17,7 +17,7 @@ import java.util.List;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EndpointHitServiceImpl implements EndpointHitService {
 
     private final EndpointHitMapper endpointHitMapper;
@@ -28,7 +28,7 @@ public class EndpointHitServiceImpl implements EndpointHitService {
     @Override
     public void addEndpointHit(EndpointHitDto endpointHitDto) {
         EndpointHit endpointHit = endpointHitRepository.save(endpointHitMapper.fromDto(endpointHitDto));
-        log.info("Запрос к эндпоинту {} обработан", endpointHit);
+        log.info("Endpoint hit {} added", endpointHit);
     }
 
     @Override
@@ -53,7 +53,8 @@ public class EndpointHitServiceImpl implements EndpointHitService {
         for (ViewStatsDto viewStat : viewStats) {
             viewStat.setHits(endpointHitRepository.getHits(viewStat.getUri()));
         }
-        log.info("Получен список статистики {}", viewStats);
+        log.info("List of statistics retrieved {}", viewStats);
+
         return viewStats;
     }
 

@@ -7,17 +7,19 @@ import java.util.List;
 
 public interface CompilationService {
 
-    List<CompilationDto> getAll(boolean pinned, Integer from, Integer size);
+    List<CompilationDto> getAll(Boolean pinned, int from, int size);
 
-    CompilationDto getById(Long compilationId);
+    CompilationDto getById(long compilationId);
 
     CompilationDto add(NewCompilationDto newCompilationDto);
 
-    void delete(Long compilationId);
+    void delete(long compilationId);
 
-    void deleteEvent(Long compilationId, Long eventId);
+    void deleteEvent(long compilationId, long eventId);
 
-    void addEvent(Long compilationId, Long eventId);
+    void addEvent(long compilationId, long eventId);
 
-    void pinCompilation(boolean pin, Long compilationId);
+    void pin(long compilationId);
+
+    void unpin(long compilationId);
 }

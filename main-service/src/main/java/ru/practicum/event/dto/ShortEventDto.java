@@ -10,7 +10,7 @@ public class ShortEventDto {
     private Long id;
     private String annotation;
     private CategoryDto category;
-    private int confirmedRequests;
+    private Long confirmedRequests;
     private String eventDate;
     private UserShortDto initiator;
     private Boolean paid;

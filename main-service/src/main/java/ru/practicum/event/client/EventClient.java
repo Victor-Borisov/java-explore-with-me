@@ -23,9 +23,13 @@ public class EventClient {
     private final RestTemplate template;
     private final DateFormatterCustom formatter;
 
+    private final String appName;
+
     public EventClient(@Value("${ewm-stat.url}") String url,
+                       @Value("${application.name}") String appName,
                        RestTemplateBuilder template,
                        DateFormatterCustom formatter) {
+        this.appName = appName;
         this.formatter = formatter;
         this.template = template
                 .uriTemplateHandler(new DefaultUriBuilderFactory(url))
@@ -51,7 +55,7 @@ public class EventClient {
     }
 
     private EndpointHitDto makeEndpointHit(HttpServletRequest request) {
-        return new EndpointHitDto("ewm-main-service",
+        return new EndpointHitDto(appName,
                 request.getRequestURI(),
                 request.getRemoteAddr(),
                 formatter.dateToString(LocalDateTime.now()));

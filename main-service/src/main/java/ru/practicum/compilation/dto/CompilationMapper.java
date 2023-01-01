@@ -3,14 +3,18 @@ package ru.practicum.compilation.dto;
 import lombok.experimental.UtilityClass;
 import ru.practicum.compilation.model.Compilation;
 import ru.practicum.event.dto.EventMapper;
+import ru.practicum.event.model.Event;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @UtilityClass
 public class CompilationMapper {
-    public CompilationDto toDto(Compilation compilation) {
+    public CompilationDto toDto(Compilation compilation, Map<Long, Long> confirmedRequests) {
         return CompilationDto.builder()
-                .events(compilation.getEvents().stream().map(EventMapper::toShortDto).collect(Collectors.toList()))
+                .events(compilation.getEvents().stream()
+                        .map((Event event) -> EventMapper.toShortDto(event, confirmedRequests.get(event.getId())))
+                        .collect(Collectors.toList()))
                 .id(compilation.getId())
                 .pinned(compilation.isPinned())
                 .title(compilation.getTitle())

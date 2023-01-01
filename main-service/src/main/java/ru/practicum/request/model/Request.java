@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "requests")
 public class Request {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "request_id")
@@ -34,5 +33,4 @@ public class Request {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 50)
     private Status status;
-
 }
