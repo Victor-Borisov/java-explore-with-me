@@ -1,6 +1,6 @@
 package ru.practicum.compilation.dto;
 
-import lombok.experimental.UtilityClass;
+import org.springframework.stereotype.Component;
 import ru.practicum.compilation.model.Compilation;
 import ru.practicum.event.dto.EventMapper;
 import ru.practicum.event.model.Event;
@@ -8,14 +8,20 @@ import ru.practicum.event.model.Event;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@UtilityClass
+@Component
 public class CompilationMapper {
+    private final EventMapper eventMapper;
+
+    public CompilationMapper(EventMapper eventMapper) {
+        this.eventMapper = eventMapper;
+    }
+
     public CompilationDto toDto(Compilation compilation,
                                 Map<Long, Long> confirmedRequests,
                                 Map<Long, Integer>  hitCounts) {
         return CompilationDto.builder()
                 .events(compilation.getEvents().stream()
-                        .map((Event event) -> EventMapper.toShortDto(event,
+                        .map((Event event) -> eventMapper.toShortDto(event,
                                 confirmedRequests.get(event.getId()),
                                 hitCounts.get(event.getId())
                                 )

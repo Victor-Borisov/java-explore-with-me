@@ -30,6 +30,8 @@ public class CompilationServiceImpl implements CompilationService {
     private final EventService eventService;
     private final RequestService requestService;
     private final CompilationRepository compilationRepository;
+    private final EventMapper eventMapper;
+    private final CompilationMapper compilationMapper;
 
     @Override
     public List<CompilationDto> getAll(Boolean pinned, int from, int size) {
@@ -39,10 +41,10 @@ public class CompilationServiceImpl implements CompilationService {
 
         return compilations.stream().map((Compilation compilation) -> {
                     List<Long> eventIds = compilation.getEvents().stream()
-                            .map(EventMapper::toId).collect(Collectors.toList());
+                            .map(eventMapper::toId).collect(Collectors.toList());
                     Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
                     Map<Long, Integer>  hitCounts = eventService.getHitCounts(compilation.getEvents());
-                    return CompilationMapper.toDto(compilation, confirmedRequests, hitCounts);
+                    return compilationMapper.toDto(compilation, confirmedRequests, hitCounts);
                 }
         ).collect(Collectors.toList());
     }
@@ -50,27 +52,27 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     public CompilationDto getById(long compilationId) {
         Compilation compilation = getByIdAndThrow(compilationId);
-        List<Long> eventIds = compilation.getEvents().stream().map(EventMapper::toId).collect(Collectors.toList());
+        List<Long> eventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toList());
         Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
         Map<Long, Integer>  hitCounts = eventService.getHitCounts(compilation.getEvents());
         log.info("Compilation {} retrieved", compilation);
 
-        return CompilationMapper.toDto(compilation, confirmedRequests, hitCounts);
+        return compilationMapper.toDto(compilation, confirmedRequests, hitCounts);
     }
 
     @Override
     @Transactional
     public CompilationDto add(NewCompilationDto newCompilationDto) {
-        Compilation compilation = CompilationMapper.fromNewCompilationDto(newCompilationDto);
+        Compilation compilation = compilationMapper.fromNewCompilationDto(newCompilationDto);
         Set<Event> eventList = eventService.getAllByEvents(newCompilationDto.getEvents());
         compilation.setEvents(eventList);
         compilation = compilationRepository.save(compilation);
-        List<Long> eventIds = compilation.getEvents().stream().map(EventMapper::toId).collect(Collectors.toList());
+        List<Long> eventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toList());
         Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
         Map<Long, Integer>  hitCounts = eventService.getHitCounts(eventList);
         log.info("Compilation {} added", compilation);
 
-        return CompilationMapper.toDto(compilation, confirmedRequests, hitCounts);
+        return compilationMapper.toDto(compilation, confirmedRequests, hitCounts);
     }
 
     @Override
