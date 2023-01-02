@@ -10,10 +10,16 @@ import java.util.stream.Collectors;
 
 @UtilityClass
 public class CompilationMapper {
-    public CompilationDto toDto(Compilation compilation, Map<Long, Long> confirmedRequests) {
+    public CompilationDto toDto(Compilation compilation,
+                                Map<Long, Long> confirmedRequests,
+                                Map<Long, Integer>  hitCounts) {
         return CompilationDto.builder()
                 .events(compilation.getEvents().stream()
-                        .map((Event event) -> EventMapper.toShortDto(event, confirmedRequests.get(event.getId())))
+                        .map((Event event) -> EventMapper.toShortDto(event,
+                                confirmedRequests.get(event.getId()),
+                                hitCounts.get(event.getId())
+                                )
+                        )
                         .collect(Collectors.toList()))
                 .id(compilation.getId())
                 .pinned(compilation.isPinned())

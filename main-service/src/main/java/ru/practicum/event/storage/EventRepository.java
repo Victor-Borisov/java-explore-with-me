@@ -48,6 +48,7 @@ public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecific
                                LocalDateTime rangeEnd,
                                Boolean onlyAvailable,
                                Pageable pageable);
+
     @Query("SELECT e FROM Event e WHERE e.id IN :events")
     Set<Event> findAllByEvents(Set<Long> events);
 }

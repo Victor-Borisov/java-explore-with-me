@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 public class EventMapper {
     private final DateFormatterCustom formatter = new DateFormatterCustom();
 
-    public FullEventDto toFullDto(Event event, Long confirmedRequests) {
+    public FullEventDto toFullDto(Event event, Long confirmedRequests, Integer views) {
         CategoryDto categoryDto = CategoryDto.builder()
                 .id(event.getCategory().getId())
                 .name(event.getCategory().getName())
@@ -39,11 +39,11 @@ public class EventMapper {
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState().toString())
                 .title(event.getTitle())
-                .views(event.getViews())
+                .views(views)
                 .build();
     }
 
-    public ShortEventDto toShortDto(Event event, Long confirmedRequests) {
+    public ShortEventDto toShortDto(Event event, Long confirmedRequests, Integer views) {
         CategoryDto categoryDto = CategoryDto.builder()
                 .id(event.getCategory().getId())
                 .name(event.getCategory().getName())
@@ -62,7 +62,7 @@ public class EventMapper {
                 .initiator(userShortDto)
                 .paid(event.getPaid())
                 .title(event.getTitle())
-                .views(event.getViews())
+                .views(views)
                 .build();
     }
 
@@ -79,7 +79,6 @@ public class EventMapper {
                 .requestModeration(newEventDto.getRequestModeration())
                 .state(State.PENDING)
                 .title(newEventDto.getTitle())
-                .views(0)
                 .build();
     }
 
@@ -97,7 +96,6 @@ public class EventMapper {
                 .requestModeration(newEventDto.getRequestModeration())
                 .state(State.PENDING)
                 .title(newEventDto.getTitle())
-                .views(0)
                 .build();
     }
 
@@ -114,7 +112,6 @@ public class EventMapper {
                 .requestModeration(newEventDto.getRequestModeration())
                 .state(State.PENDING)
                 .title(newEventDto.getTitle())
-                .views(0)
                 .build();
     }
 

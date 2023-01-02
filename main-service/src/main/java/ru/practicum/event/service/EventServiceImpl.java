@@ -73,9 +73,14 @@ public class EventServiceImpl implements EventService {
                 ranges.get(0), ranges.get(1), getPageable(from, size, sort));
         List<Long> eventIds = events.stream().map(EventMapper::toId).collect(Collectors.toList());
         Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
+        Map<Long, Integer>  hitCounts = getHitCounts(events);
         log.info("List of events {} is retrieved by administrator", events);
+
         return events.stream()
-                .map((Event event) -> EventMapper.toFullDto(event, confirmedRequests.get(event.getId())))
+                .map((Event event) -> EventMapper.toFullDto(event,
+                        confirmedRequests.get(event.getId()),
+                        hitCounts.get(event.getId()))
+                )
                 .collect(Collectors.toList());
     }
 
@@ -87,9 +92,12 @@ public class EventServiceImpl implements EventService {
         Optional.ofNullable(eventDto.getLocation()).ifPresent(event::setLocation);
         Optional.ofNullable(eventDto.getRequestModeration()).ifPresent(event::setRequestModeration);
         repository.save(event);
+        Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} updated by admin", eventId);
 
-        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
+        return EventMapper.toFullDto(event,
+                requestService.getConfirmedRequests(eventId),
+                hitCounts.get(event.getId()));
     }
 
     @Override
@@ -103,8 +111,11 @@ public class EventServiceImpl implements EventService {
             repository.save(event);
             log.info("Event {} published by admin", eventId);
         }
+        Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
 
-        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
+        return EventMapper.toFullDto(event,
+                requestService.getConfirmedRequests(eventId),
+                hitCounts.get(event.getId()));
     }
 
     @Override
@@ -116,8 +127,11 @@ public class EventServiceImpl implements EventService {
             repository.save(event);
             log.info("Event {} rejected by admin", eventId);
         }
+        Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
 
-        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
+        return EventMapper.toFullDto(event,
+                requestService.getConfirmedRequests(eventId),
+                hitCounts.get(event.getId()));
     }
 
     @Override
@@ -125,9 +139,14 @@ public class EventServiceImpl implements EventService {
         List<Event> events = repository.findAllByInitiatorId(userId, getPageable(from, size, Sort.unsorted()));
         List<Long> eventIds = events.stream().map(EventMapper::toId).collect(Collectors.toList());
         Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
+        Map<Long, Integer>  hitCounts = getHitCounts(events);
         log.info("List of events {} retrieved", events);
+
         return events.stream()
-                .map((Event event) -> EventMapper.toShortDto(event, confirmedRequests.get(event.getId())))
+                .map((Event event) -> EventMapper.toShortDto(event,
+                        confirmedRequests.get(event.getId()),
+                        hitCounts.get(event.getId()))
+                )
                 .collect(Collectors.toList());
     }
 
@@ -147,9 +166,12 @@ public class EventServiceImpl implements EventService {
             event.setState(State.PENDING);
         }
         repository.save(event);
+        Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} updated", event);
 
-        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(event.getId()));
+        return EventMapper.toFullDto(event,
+                requestService.getConfirmedRequests(event.getId()),
+                hitCounts.get(event.getId()));
     }
 
     @Override
@@ -160,9 +182,12 @@ public class EventServiceImpl implements EventService {
         event.setCategory(CategoryMapper.fromCategoryDto(categoryService.getById(newEventDto.getCategory())));
         event.setInitiator(UserMapper.fromUserDto(userService.getAll(List.of(userId), 0, 1).get(0)));
         repository.save(event);
+        Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} added", event);
 
-        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(event.getId()));
+        return EventMapper.toFullDto(event,
+                requestService.getConfirmedRequests(event.getId()),
+                hitCounts.get(event.getId()));
     }
 
     @Override
@@ -171,9 +196,12 @@ public class EventServiceImpl implements EventService {
         if (event == null) {
             throw new NotFoundException("Event {} not found", eventId);
         }
+        Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} retrieved", eventId);
 
-        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
+        return EventMapper.toFullDto(event,
+                requestService.getConfirmedRequests(eventId),
+                hitCounts.get(event.getId()));
     }
 
     @Override
@@ -188,9 +216,12 @@ public class EventServiceImpl implements EventService {
         }
         event.setState(State.CANCELED);
         repository.save(event);
+        Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} canceled", eventId);
 
-        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
+        return EventMapper.toFullDto(event,
+                requestService.getConfirmedRequests(eventId),
+                hitCounts.get(event.getId()));
     }
 
     @Override
@@ -264,9 +295,10 @@ public class EventServiceImpl implements EventService {
                 categoryService.getById(categoryId);
             }
         }
+
         Sort sort = "EVENT_DATE".equals(sortType) ?
                 Sort.sort(Event.class).by(Event::getEventDate).ascending() :
-                Sort.sort(Event.class).by(Event::getViews).descending();
+                Sort.unsorted();
         if (onlyAvailable == null) {
             onlyAvailable = true;
         }
@@ -283,14 +315,24 @@ public class EventServiceImpl implements EventService {
                 ranges.get(1),
                 onlyAvailable,
                 getPageable(from / size, size, sort));
-        setViews(events);
+        Map<Long, Integer>  hitCounts = getHitCounts(events);
         List<Long> eventIds = events.stream().map(EventMapper::toId).collect(Collectors.toList());
         Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
         log.info("List of events {} retrieved", events);
 
-        return events.stream()
-                .map((Event event) -> EventMapper.toShortDto(event, confirmedRequests.get(event.getId())))
+        List<ShortEventDto> results = events.stream()
+                .map((Event event) ->
+                        EventMapper.toShortDto(event,
+                                confirmedRequests.get(event.getId()),
+                                hitCounts.get(event.getId()))
+                )
                 .collect(Collectors.toList());
+        if (sortType.equals("EVENT_DATE")) {
+            return results;
+        } else {
+            return results.stream().sorted((e1, e2) -> Integer.compare(e2.getViews(), e1.getViews()))
+                    .collect(Collectors.toList());
+        }
     }
 
     @Override
@@ -299,9 +341,13 @@ public class EventServiceImpl implements EventService {
         if (event == null) {
             throw new NotFoundException("Event {} not found", eventId);
         }
-        setViews(List.of(event));
+        Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} retrieved", eventId);
-        return EventMapper.toFullDto(event, requestService.getConfirmedRequests(eventId));
+
+        return EventMapper.toFullDto(event,
+                requestService.getConfirmedRequests(eventId),
+                hitCounts.get(event.getId())
+        );
     }
 
     @Override
@@ -309,15 +355,18 @@ public class EventServiceImpl implements EventService {
         return repository.findAllByEvents(events);
     }
 
-    private void setViews(List<Event> events) {
+    @Override
+    public Map<Long, Integer> getHitCounts(Collection<Event> events) {
+        Map<Long, Integer> results = new HashMap<>();
         events.forEach(event -> {
             List<ViewStatsDto> views = eventClient.getHits(event.getCreatedOn(), LocalDateTime.now(),
                             new String[]{"/events/" + event.getId()}, false)
                     .getBody();
             if (views != null && views.size() > 0) {
-                event.setViews(views.get(0).getHits());
+                results.put(event.getId(), views.get(0).getHits());
             }
         });
+        return results;
     }
 
     private Event getByIdAndThrow(long eventId) {

@@ -66,6 +66,4 @@ public class Event {
     @NotNull
     @Column(name = "title", nullable = false, length = 120)
     private String title;
-    private int views;
-
 }

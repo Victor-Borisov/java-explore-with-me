@@ -6,7 +6,9 @@ import ru.practicum.request.dto.ParticipationRequestDto;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface EventService {
@@ -52,4 +54,6 @@ public interface EventService {
     FullEventDto getByIdPublic(long eventId);
 
     Set<Event> getAllByEvents(Set<Long> events);
+
+    Map<Long, Integer> getHitCounts(Collection<Event> events);
 }

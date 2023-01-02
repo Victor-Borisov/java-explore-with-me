@@ -41,7 +41,8 @@ public class CompilationServiceImpl implements CompilationService {
                     List<Long> eventIds = compilation.getEvents().stream()
                             .map(EventMapper::toId).collect(Collectors.toList());
                     Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
-                    return CompilationMapper.toDto(compilation, confirmedRequests);
+                    Map<Long, Integer>  hitCounts = eventService.getHitCounts(compilation.getEvents());
+                    return CompilationMapper.toDto(compilation, confirmedRequests, hitCounts);
                 }
         ).collect(Collectors.toList());
     }
@@ -51,9 +52,10 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation compilation = getByIdAndThrow(compilationId);
         List<Long> eventIds = compilation.getEvents().stream().map(EventMapper::toId).collect(Collectors.toList());
         Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
+        Map<Long, Integer>  hitCounts = eventService.getHitCounts(compilation.getEvents());
         log.info("Compilation {} retrieved", compilation);
 
-        return CompilationMapper.toDto(compilation, confirmedRequests);
+        return CompilationMapper.toDto(compilation, confirmedRequests, hitCounts);
     }
 
     @Override
@@ -65,9 +67,10 @@ public class CompilationServiceImpl implements CompilationService {
         compilation = compilationRepository.save(compilation);
         List<Long> eventIds = compilation.getEvents().stream().map(EventMapper::toId).collect(Collectors.toList());
         Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
+        Map<Long, Integer>  hitCounts = eventService.getHitCounts(eventList);
         log.info("Compilation {} added", compilation);
 
-        return CompilationMapper.toDto(compilation, confirmedRequests);
+        return CompilationMapper.toDto(compilation, confirmedRequests, hitCounts);
     }
 
     @Override
