@@ -1,6 +1,6 @@
 package ru.practicum.event.dto;
 
-import lombok.experimental.UtilityClass;
+import org.springframework.stereotype.Component;
 import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.category.model.Category;
 import ru.practicum.event.model.Event;
@@ -9,12 +9,17 @@ import ru.practicum.user.dto.UserShortDto;
 import ru.practicum.utils.DateFormatterCustom;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
-@UtilityClass
+@Component
 public class EventMapper {
-    private final DateFormatterCustom formatter = new DateFormatterCustom();
+    private static DateFormatterCustom formatter;
 
-    public FullEventDto toFullDto(Event event, Long confirmedRequests, Integer views) {
+    public EventMapper(DateFormatterCustom formatter) {
+        this.formatter = formatter;
+    }
+
+    public static FullEventDto toFullDto(Event event, Long confirmedRequests, Integer views) {
         CategoryDto categoryDto = CategoryDto.builder()
                 .id(event.getCategory().getId())
                 .name(event.getCategory().getName())
@@ -43,7 +48,7 @@ public class EventMapper {
                 .build();
     }
 
-    public ShortEventDto toShortDto(Event event, Long confirmedRequests, Integer views) {
+    public static ShortEventDto toShortDto(Event event, Long confirmedRequests, Integer views) {
         CategoryDto categoryDto = CategoryDto.builder()
                 .id(event.getCategory().getId())
                 .name(event.getCategory().getName())
@@ -66,13 +71,13 @@ public class EventMapper {
                 .build();
     }
 
-    public Event fromNewDto(NewEventDto newEventDto) {
+    public static Event fromNewDto(NewEventDto newEventDto) {
         return Event.builder()
                 .annotation(newEventDto.getAnnotation())
                 .category(Category.builder().id(newEventDto.getCategory()).build())
-                .createdOn(LocalDateTime.now())
+                .createdOn(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS))
                 .description(newEventDto.getDescription())
-                .eventDate(formatter.stringToDate(newEventDto.getEventDate()))
+                .eventDate(newEventDto.getEventDate())
                 .location(newEventDto.getLocation())
                 .paid(newEventDto.getPaid())
                 .participantLimit(newEventDto.getParticipantLimit())
@@ -82,14 +87,14 @@ public class EventMapper {
                 .build();
     }
 
-    public Event fromUpdateEventRequest(UpdateEventRequest newEventDto) {
+    public static Event fromUpdateEventRequest(UpdateEventRequest newEventDto) {
         return Event.builder()
                 .id(newEventDto.getEventId())
                 .annotation(newEventDto.getAnnotation())
                 .category(Category.builder().id(newEventDto.getCategory()).build())
-                .createdOn(LocalDateTime.now())
+                .createdOn(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS))
                 .description(newEventDto.getDescription())
-                .eventDate(formatter.stringToDate(newEventDto.getEventDate()))
+                .eventDate(newEventDto.getEventDate())
                 .location(newEventDto.getLocation())
                 .paid(newEventDto.getPaid())
                 .participantLimit(newEventDto.getParticipantLimit())
@@ -99,13 +104,13 @@ public class EventMapper {
                 .build();
     }
 
-    public Event fromAdminUpdateEventRequest(AdminUpdateEventRequest newEventDto) {
+    public static Event fromAdminUpdateEventRequest(AdminUpdateEventRequest newEventDto) {
         return Event.builder()
                 .annotation(newEventDto.getAnnotation())
                 .category(Category.builder().id(newEventDto.getCategory()).build())
-                .createdOn(LocalDateTime.now())
+                .createdOn(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS))
                 .description(newEventDto.getDescription())
-                .eventDate(formatter.stringToDate(newEventDto.getEventDate()))
+                .eventDate(newEventDto.getEventDate())
                 .location(newEventDto.getLocation())
                 .paid(newEventDto.getPaid())
                 .participantLimit(newEventDto.getParticipantLimit())
@@ -115,7 +120,7 @@ public class EventMapper {
                 .build();
     }
 
-    public Long toId(Event event) {
+    public static Long toId(Event event) {
         return event.getId();
     }
 

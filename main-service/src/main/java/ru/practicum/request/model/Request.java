@@ -20,11 +20,11 @@ public class Request {
     @Column(name = "request_id")
     private Long id;
 
-    @ManyToOne(cascade = CascadeType.MERGE)
+    @ManyToOne
     @JoinColumn(name = "event_id")
     private Event event;
 
-    @ManyToOne(cascade = CascadeType.MERGE)
+    @ManyToOne
     @JoinColumn(name = "requester_id")
     private User requester;
 

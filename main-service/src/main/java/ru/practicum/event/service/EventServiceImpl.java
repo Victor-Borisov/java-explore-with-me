@@ -19,16 +19,14 @@ import ru.practicum.request.dto.RequestMapper;
 import ru.practicum.request.model.Request;
 import ru.practicum.request.model.Status;
 import ru.practicum.request.service.RequestService;
-import ru.practicum.user.dto.UserMapper;
 import ru.practicum.user.service.UserService;
 import ru.practicum.utils.PageableRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,11 +45,6 @@ public class EventServiceImpl implements EventService {
     @Override
     public List<FullEventDto> getAllByAdmin(Long[] users, String[] states, Long[] categories,
                                             LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size) {
-        if (users != null) {
-            for (Long userId : users) {
-                userService.getUserById(userId);
-            }
-        }
         List<State> stateList = new ArrayList<>();
         if (states != null) {
             for (String state : states) {
@@ -60,15 +53,8 @@ public class EventServiceImpl implements EventService {
                 stateList.add(stateCorrect);
             }
         }
-        if (categories != null) {
-            for (Long categoryId : categories) {
-                categoryService.getById(categoryId);
-            }
-        }
         List<LocalDateTime> ranges = eventDatePreparation(rangeStart, rangeEnd);
-
         Sort sort = Sort.sort(Event.class).by(Event::getEventDate).descending();
-
         List<Event> events = repository.findAllByUsersAndStatesAndCategories(users, stateList, categories,
                 ranges.get(0), ranges.get(1), getPageable(from, size, sort));
         List<Long> eventIds = events.stream().map(EventMapper::toId).collect(Collectors.toList());
@@ -91,7 +77,6 @@ public class EventServiceImpl implements EventService {
         eventUpdatePreparation(EventMapper.fromAdminUpdateEventRequest(eventDto), event);
         Optional.ofNullable(eventDto.getLocation()).ifPresent(event::setLocation);
         Optional.ofNullable(eventDto.getRequestModeration()).ifPresent(event::setRequestModeration);
-        repository.save(event);
         Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} updated by admin", eventId);
 
@@ -106,9 +91,8 @@ public class EventServiceImpl implements EventService {
         Event event = getByIdAndThrow(eventId);
         if (event.getEventDate().plusHours(1).isAfter(LocalDateTime.now()) &&
                 event.getState() == State.PENDING) {
-            event.setPublishedOn(LocalDateTime.now());
+            event.setPublishedOn(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS));
             event.setState(State.PUBLISHED);
-            repository.save(event);
             log.info("Event {} published by admin", eventId);
         }
         Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
@@ -124,7 +108,6 @@ public class EventServiceImpl implements EventService {
         Event event = getByIdAndThrow(eventId);
         if (event.getState() == State.PENDING) {
             event.setState(State.CANCELED);
-            repository.save(event);
             log.info("Event {} rejected by admin", eventId);
         }
         Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
@@ -155,7 +138,6 @@ public class EventServiceImpl implements EventService {
     public FullEventDto updatePrivate(long userId, UpdateEventRequest eventDto) {
         eventDateValidation(eventDto.getEventDate());
         Event event = getByIdAndThrow(eventDto.getEventId());
-        eventUpdatePreparation(EventMapper.fromUpdateEventRequest(eventDto), event);
         if (userId != event.getInitiator().getId()) {
             throw new ValidationException("Event can be edited only by initiator");
         }
@@ -165,7 +147,7 @@ public class EventServiceImpl implements EventService {
         if (event.getState() == State.CANCELED) {
             event.setState(State.PENDING);
         }
-        repository.save(event);
+        eventUpdatePreparation(EventMapper.fromUpdateEventRequest(eventDto), event);
         Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} updated", event);
 
@@ -180,7 +162,7 @@ public class EventServiceImpl implements EventService {
         eventDateValidation(newEventDto.getEventDate());
         Event event = EventMapper.fromNewDto(newEventDto);
         event.setCategory(CategoryMapper.fromCategoryDto(categoryService.getById(newEventDto.getCategory())));
-        event.setInitiator(UserMapper.fromUserDto(userService.getAll(List.of(userId), 0, 1).get(0)));
+        event.setInitiator(userService.getUserById(userId));
         repository.save(event);
         Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} added", event);
@@ -215,7 +197,6 @@ public class EventServiceImpl implements EventService {
             throw new ValidationException("Only moderation waiting event may be canceled");
         }
         event.setState(State.CANCELED);
-        repository.save(event);
         Map<Long, Integer>  hitCounts = getHitCounts(List.of(event));
         log.info("Event {} canceled", eventId);
 
@@ -374,10 +355,8 @@ public class EventServiceImpl implements EventService {
                 new NotFoundException("Event {} not found", eventId));
     }
 
-    private void eventDateValidation(String eventDate) {
-        String[] lines = eventDate.split(" ");
-        LocalDateTime dateTime = LocalDateTime.of(LocalDate.parse(lines[0]), LocalTime.parse(lines[1]));
-        if (dateTime.isBefore(LocalDateTime.now().plusHours(2))) {
+    private void eventDateValidation(LocalDateTime eventDate) {
+        if (eventDate.isBefore(LocalDateTime.now().plusHours(2))) {
             throw new ValidationException("Event start time can not be earlier than now plus 2 hours");
         }
     }
@@ -387,13 +366,13 @@ public class EventServiceImpl implements EventService {
     }
 
     private void eventUpdatePreparation(Event eventDto, Event event) {
-        if (eventDto.getAnnotation() != null) {
+        if (!eventDto.getAnnotation().isBlank()) {
             event.setAnnotation(eventDto.getAnnotation());
         }
         if (eventDto.getCategory() != null) {
             event.setCategory(eventDto.getCategory());
         }
-        if (eventDto.getDescription() != null) {
+        if (!eventDto.getDescription().isBlank()) {
             event.setDescription(eventDto.getDescription());
         }
         if (eventDto.getEventDate() != null) {
@@ -405,13 +384,13 @@ public class EventServiceImpl implements EventService {
         if (eventDto.getParticipantLimit() != null) {
             event.setParticipantLimit(eventDto.getParticipantLimit());
         }
-        if (eventDto.getTitle() != null) {
+        if (!eventDto.getTitle().isBlank()) {
             event.setTitle(eventDto.getTitle());
         }
     }
 
     private List<LocalDateTime> eventDatePreparation(LocalDateTime rangeStart, LocalDateTime rangeEnd) {
-        LocalDateTime startDate = LocalDateTime.now();
+        LocalDateTime startDate = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
         LocalDateTime endDate = LocalDateTime.parse("5000-01-01 00:00:00",
                 DateTimeFormatter.ofPattern(DATE_TIME_STRING));
         if (rangeStart != null) {

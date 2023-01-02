@@ -8,10 +8,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class StatViewForSpecific {
-
     private String start;
     private String end;
     private String[] uris;
     private boolean unique;
-
 }

@@ -2,16 +2,12 @@ package ru.practicum.dto;
 
 import org.springframework.stereotype.Component;
 import ru.practicum.model.EndpointHit;
-import ru.practicum.utils.DateFormatterCustom;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 public class EndpointHitMapper {
-
-    private final DateFormatterCustom formatter = new DateFormatterCustom();
-
     public ViewStatsDto toDto(EndpointHit endpointHit) {
         return new ViewStatsDto(endpointHit.getApp(), endpointHit.getUri(), 0);
     }
@@ -21,7 +17,7 @@ public class EndpointHitMapper {
                 endpointHitDto.getApp(),
                 endpointHitDto.getUri(),
                 endpointHitDto.getIp(),
-                formatter.stringToDate(endpointHitDto.getTimestamp()));
+                endpointHitDto.getTimestamp());
     }
 
     public List<ViewStatsDto> toDto(List<EndpointHit> endpointHits) {

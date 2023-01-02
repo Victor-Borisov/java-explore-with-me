@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import ru.practicum.request.model.Request;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface RequestRepository extends JpaRepository<Request, Long> {
 
@@ -27,4 +28,8 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
             "WHERE e.event_id IN ?1",
             nativeQuery = true)
     List<Object[]> getCountConfirmedByEventIdList(List<Long> events);
+
+    Optional<Request> findByRequesterIdAndEventId(long userId, long eventId);
+
+    Optional<Request> findByRequesterIdAndId(Long userId, Long requestId);
 }

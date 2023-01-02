@@ -2,8 +2,9 @@ package ru.practicum.user.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import ru.practicum.exceptions.ConflictException;
 import ru.practicum.exceptions.NotFoundException;
 import ru.practicum.user.dto.UserDto;
 import ru.practicum.user.dto.UserMapper;
@@ -11,7 +12,6 @@ import ru.practicum.user.model.User;
 import ru.practicum.user.storage.UserRepository;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,7 +22,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto add(UserDto userDto) {
-        checkIfExistsWithSameName(userDto.getName());
         User user = userRepository.save(UserMapper.fromUserDto(userDto));
         log.info("User added {}", user);
 
@@ -31,12 +30,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserDto> getAll(List<Long> ids, int from, int size) {
-        List<User> users = userRepository.findAllById(ids);
-        log.info("User list retrieved {}", users);
+        Pageable pageable = PageRequest.of(from / size, size);
+        if (ids == null) {
+            log.info("User list retrieved by from and size");
 
-        return users.stream()
-                .map(UserMapper::toUserDto)
-                .collect(Collectors.toList());
+            return userRepository.findAll(pageable).stream()
+                    .map(UserMapper::toUserDto)
+                    .collect(Collectors.toList());
+        } else {
+            log.info("User list retrieved by ids");
+
+            return userRepository.findAllById(ids).stream()
+                    .map(UserMapper::toUserDto)
+                    .collect(Collectors.toList());
+        }
     }
 
     @Override
@@ -50,12 +57,5 @@ public class UserServiceImpl implements UserService {
     public User getUserById(long userId) {
         return userRepository.findById(userId).orElseThrow(() ->
                 new NotFoundException("User with id {} not found", userId));
-    }
-
-    void checkIfExistsWithSameName(String name) {
-        Optional<User> userWithSameName = userRepository.findByName(name);
-        if (userWithSameName.isPresent()) {
-            throw new ConflictException("User with the same name already exists");
-        }
     }
 }

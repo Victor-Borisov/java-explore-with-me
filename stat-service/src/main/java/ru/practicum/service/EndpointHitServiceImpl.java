@@ -24,7 +24,6 @@ public class EndpointHitServiceImpl implements EndpointHitService {
     private final EndpointHitRepository endpointHitRepository;
     private final DateFormatterCustom formatter;
 
-
     @Override
     public void addEndpointHit(EndpointHitDto endpointHitDto) {
         EndpointHit endpointHit = endpointHitRepository.save(endpointHitMapper.fromDto(endpointHitDto));

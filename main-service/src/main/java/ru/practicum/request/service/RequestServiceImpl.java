@@ -18,9 +18,11 @@ import ru.practicum.user.service.UserService;
 
 import java.math.BigInteger;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -46,6 +48,14 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public ParticipationRequestDto addRequest(long userId, long eventId) {
         Event event = eventService.getById(eventId);
+        userService.getUserById(userId);
+        Optional<Request> requestOptional = requestRepository.findByRequesterIdAndEventId(userId, eventId);
+        if (requestOptional.isPresent()) {
+            log.info("Returned existed participation request for event {} from user {}", eventId, userId);
+
+            return RequestMapper.toRequestDto(requestOptional.get());
+        }
+
         if (event.getInitiator().getId().equals(userId)) {
             throw new ValidationException("Participation request for own event prohibited");
         }
@@ -65,7 +75,7 @@ public class RequestServiceImpl implements RequestService {
                 .status(status)
                 .event(event)
                 .requester(userService.getUserById(userId))
-                .created(LocalDateTime.now())
+                .created(LocalDateTime.now().truncatedTo(ChronoUnit.MICROS))
                 .build();
         log.info("Added participation request for event {} from user {}", eventId, userId);
 
@@ -74,17 +84,14 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     public ParticipationRequestDto cancelRequest(Long userId, Long requestId) {
-        Request request = getByRequestId(requestId);
-        if (!request.getRequester().getId().equals(userId)) {
-            throw new ValidationException("Cancellation of someone else's request prohibited");
+        Optional<Request> request = requestRepository.findByRequesterIdAndId(userId, requestId);
+        if (request.isEmpty()) {
+            throw new ValidationException("Request not found");
         }
-        if (request.getStatus().equals(Status.REJECTED) || request.getStatus().equals(Status.CANCELED)) {
-            throw new ValidationException("Request already canceled/rejected");
-        }
-        request.setStatus(Status.CANCELED);
+        request.get().setStatus(Status.CANCELED);
         log.info("Request on event {} canceled", requestId);
 
-        return RequestMapper.toRequestDto(requestRepository.save(request));
+        return RequestMapper.toRequestDto(requestRepository.save(request.get()));
     }
 
     @Override
