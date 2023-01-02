@@ -57,7 +57,7 @@ public class Event {
     @Column(name = "request_moderation")
     private Boolean requestModeration;
 
-    @Column(name="state", nullable=false)
+    @Column(name="state", nullable = false)
     @Enumerated(EnumType.STRING)
     private State state;
 
