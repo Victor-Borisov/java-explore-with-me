@@ -1,5 +1,6 @@
 package ru.practicum.event.dto;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.category.model.Category;
@@ -15,8 +16,9 @@ import java.time.temporal.ChronoUnit;
 public class EventMapper {
     private static DateFormatterCustom formatter;
 
+    @Autowired
     public EventMapper(DateFormatterCustom formatter) {
-        this.formatter = formatter;
+        EventMapper.formatter = formatter;
     }
 
     public static FullEventDto toFullDto(Event event, Long confirmedRequests, Integer views) {
