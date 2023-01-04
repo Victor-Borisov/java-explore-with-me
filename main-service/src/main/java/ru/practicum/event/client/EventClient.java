@@ -58,7 +58,8 @@ public class EventClient {
         return new EndpointHitDto(appName,
                 request.getRequestURI(),
                 request.getRemoteAddr(),
-                formatter.dateToString(LocalDateTime.now()));
+                LocalDateTime.now()
+        );
     }
 
     private <T> HttpEntity<T> getHttpEntity(T dto) {

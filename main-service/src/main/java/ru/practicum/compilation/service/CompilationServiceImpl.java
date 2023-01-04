@@ -18,6 +18,7 @@ import ru.practicum.exceptions.NotFoundException;
 import ru.practicum.request.service.RequestService;
 import ru.practicum.utils.PageableRequest;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,24 +38,26 @@ public class CompilationServiceImpl implements CompilationService {
     public List<CompilationDto> getAll(Boolean pinned, int from, int size) {
         List<Compilation> compilations = compilationRepository.findAllByPinnedIs(pinned,
                 getPageable(from, size, Sort.unsorted()));
+        Set<Long> eventIds = new HashSet<>();
+        for (Compilation compilation : compilations) {
+            Set<Long> subEventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toSet());
+            eventIds.addAll(subEventIds);
+        }
+        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdSet(eventIds);
+        Map<Long, Integer>  hitCounts = eventService.getHitCountsByEventIdSet(eventIds);
         log.info("List of compilations {} retrieved", compilations);
 
-        return compilations.stream().map((Compilation compilation) -> {
-                    List<Long> eventIds = compilation.getEvents().stream()
-                            .map(eventMapper::toId).collect(Collectors.toList());
-                    Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
-                    Map<Long, Integer>  hitCounts = eventService.getHitCounts(compilation.getEvents());
-                    return compilationMapper.toDto(compilation, confirmedRequests, hitCounts);
-                }
-        ).collect(Collectors.toList());
+        return compilations.stream()
+                .map((Compilation compilation) -> compilationMapper.toDto(compilation, confirmedRequests, hitCounts))
+                .collect(Collectors.toList());
     }
 
     @Override
     public CompilationDto getById(long compilationId) {
         Compilation compilation = getByIdAndThrow(compilationId);
-        List<Long> eventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toList());
-        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
-        Map<Long, Integer>  hitCounts = eventService.getHitCounts(compilation.getEvents());
+        Set<Long> eventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toSet());
+        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdSet(eventIds);
+        Map<Long, Integer>  hitCounts = eventService.getHitCountsByEventIdSet(eventIds);
         log.info("Compilation {} retrieved", compilation);
 
         return compilationMapper.toDto(compilation, confirmedRequests, hitCounts);
@@ -67,9 +70,9 @@ public class CompilationServiceImpl implements CompilationService {
         Set<Event> eventList = eventService.getAllByEvents(newCompilationDto.getEvents());
         compilation.setEvents(eventList);
         compilation = compilationRepository.save(compilation);
-        List<Long> eventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toList());
-        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdList(eventIds);
-        Map<Long, Integer>  hitCounts = eventService.getHitCounts(eventList);
+        Set<Long> eventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toSet());
+        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdSet(eventIds);
+        Map<Long, Integer>  hitCounts = eventService.getHitCountsByEventIdSet(eventIds);
         log.info("Compilation {} added", compilation);
 
         return compilationMapper.toDto(compilation, confirmedRequests, hitCounts);

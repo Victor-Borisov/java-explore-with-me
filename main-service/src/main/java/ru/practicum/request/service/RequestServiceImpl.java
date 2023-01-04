@@ -19,10 +19,7 @@ import ru.practicum.user.service.UserService;
 import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -117,7 +114,7 @@ public class RequestServiceImpl implements RequestService {
     }
 
     @Override
-    public Map<Long, Long> getCountConfirmedByEventIdList(List<Long> events) {
+    public Map<Long, Long> getCountConfirmedByEventIdSet(Set<Long> events) {
         Map<Long, Long> results = new HashMap<>();
         List<Object[]> countList = requestRepository.getCountConfirmedByEventIdList(events);
         for (Object[] count: countList) {

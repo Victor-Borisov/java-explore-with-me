@@ -11,9 +11,13 @@ import ru.practicum.model.EndpointHit;
 import ru.practicum.model.StatViewForSpecific;
 import ru.practicum.utils.DateFormatterCustom;
 
+import java.math.BigInteger;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,7 +40,8 @@ public class EndpointHitServiceImpl implements EndpointHitService {
         criteria.setEnd(dateDecoder(criteria.getEnd()));
         List<EndpointHit> endpointHits;
         if (criteria.getUris() != null && !criteria.isUnique()) {
-            endpointHits = endpointHitRepository.findAllByTimestampBetweenAndUriIn(formatter.stringToDate(criteria.getStart()),
+            endpointHits = endpointHitRepository
+                    .findAllByTimestampBetweenAndUriIn(formatter.stringToDate(criteria.getStart()),
                     formatter.stringToDate(criteria.getEnd()), List.of(criteria.getUris()));
         } else if (criteria.getUris() == null && criteria.isUnique()) {
             endpointHits = endpointHitRepository.findAllByUniqueIp(formatter.stringToDate(criteria.getStart()),
@@ -48,14 +53,28 @@ public class EndpointHitServiceImpl implements EndpointHitService {
             endpointHits = endpointHitRepository.findAllByTimestampBetween(formatter.stringToDate(criteria.getStart()),
                     formatter.stringToDate(criteria.getEnd()));
         }
-        List<ViewStatsDto> viewStats = endpointHitMapper.toDto(endpointHits);
-        for (ViewStatsDto viewStat : viewStats) {
-            viewStat.setHits(endpointHitRepository.getHits(viewStat.getUri()));
-        }
+        List<String> endpointUris = endpointHits.stream().map(endpointHitMapper::toUri).collect(Collectors.toList());
+        Map<String, Integer> hitCounts = getHitByUriList(endpointUris);
+        List<ViewStatsDto> viewStats = endpointHits
+                .stream()
+                .map((EndpointHit endpointHit) -> endpointHitMapper
+                        .toDto(endpointHit, hitCounts.get(endpointHit.getUri())))
+                .collect(Collectors.toList());
         log.info("List of statistics retrieved {}", viewStats);
 
         return viewStats;
     }
+
+    @Override
+    public Map<String, Integer> getHitByUriList(List<String> uris) {
+        Map<String, Integer> results = new HashMap<>();
+        List<Object[]> countList = endpointHitRepository.getCountHitByUriList(uris);
+        for (Object[] count: countList) {
+            results.put(((String) count[0]), ((BigInteger) count[1]).intValue());
+        }
+        return results;
+    }
+
 
     private String dateDecoder(String date) {
         return URLDecoder.decode(date, StandardCharsets.UTF_8);

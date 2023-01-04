@@ -6,19 +6,12 @@ import ru.practicum.category.model.Category;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.model.State;
 import ru.practicum.user.dto.UserShortDto;
-import ru.practicum.utils.DateFormatterCustom;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
 @Component
 public class EventMapper {
-    private final DateFormatterCustom formatter;
-
-    public EventMapper(DateFormatterCustom formatter) {
-        this.formatter = formatter;
-    }
-
     public FullEventDto toFullDto(Event event, Long confirmedRequests, Integer views) {
         CategoryDto categoryDto = CategoryDto.builder()
                 .id(event.getCategory().getId())
@@ -33,14 +26,14 @@ public class EventMapper {
                 .annotation(event.getAnnotation())
                 .category(categoryDto)
                 .confirmedRequests(confirmedRequests)
-                .createdOn(formatter.dateToString(event.getCreatedOn()))
+                .createdOn(event.getCreatedOn())
                 .description(event.getDescription())
-                .eventDate(formatter.dateToString(event.getEventDate()))
+                .eventDate(event.getEventDate())
                 .initiator(userShortDto)
                 .location(event.getLocation())
                 .paid(event.getPaid())
                 .participantLimit(event.getParticipantLimit())
-                .publishedOn(formatter.dateToString(event.getPublishedOn()))
+                .publishedOn(event.getPublishedOn())
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState().toString())
                 .title(event.getTitle())
@@ -63,7 +56,7 @@ public class EventMapper {
                 .annotation(event.getAnnotation())
                 .category(categoryDto)
                 .confirmedRequests(confirmedRequests)
-                .eventDate(formatter.dateToString(event.getEventDate()))
+                .eventDate(event.getEventDate())
                 .initiator(userShortDto)
                 .paid(event.getPaid())
                 .title(event.getTitle())

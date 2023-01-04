@@ -3,7 +3,6 @@ package ru.practicum.compilation.dto;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.Set;
 
@@ -13,10 +12,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NewCompilationDto {
-    @NotNull
     private Set<Long> events;
 
-    @NotNull
     private boolean pinned;
 
     @NotBlank

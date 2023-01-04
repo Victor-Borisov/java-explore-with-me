@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import ru.practicum.request.model.Request;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +28,7 @@ public interface RequestRepository extends JpaRepository<Request, Long> {
                 "FROM requests r WHERE status = 'CONFIRMED' GROUP BY event_id) r ON r.event_id = e.event_id " +
             "WHERE e.event_id IN ?1",
             nativeQuery = true)
-    List<Object[]> getCountConfirmedByEventIdList(List<Long> events);
+    List<Object[]> getCountConfirmedByEventIdList(Collection<Long> events);
 
     Optional<Request> findByRequesterIdAndEventId(long userId, long eventId);
 

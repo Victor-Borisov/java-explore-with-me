@@ -37,6 +37,7 @@ public class NewEventDto {
     private Boolean paid;
 
     @NotNull
+    @PositiveOrZero
     private Integer participantLimit;
 
     @NotNull

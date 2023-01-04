@@ -89,7 +89,7 @@ public class ErrorHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
-        log.info("MethodArgumentNotValidException: {}", e.getMessage(), e);
+        log.info("MethodArgumentNotValidException: {}", e.toString());
 
         return ApiError.builder()
                 .errors(e.getStackTrace())
@@ -103,7 +103,7 @@ public class ErrorHandler {
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleMissingParams(final MissingServletRequestParameterException e) {
-        log.info("MissingServletRequestParameterException: {}", e.getMessage(), e);
+        log.info("MissingServletRequestParameterException: {}", e.toString());
 
         return ApiError.builder()
                 .errors(e.getStackTrace())
@@ -117,7 +117,7 @@ public class ErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleThrowable(final Throwable e) {
-        log.info("500 {}", e.getMessage(), e);
+        log.info("500 {}", e.toString());
 
         return ApiError.builder()
                 .errors(e.getStackTrace())

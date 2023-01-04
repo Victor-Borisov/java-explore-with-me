@@ -3,27 +3,27 @@ package ru.practicum.dto;
 import org.springframework.stereotype.Component;
 import ru.practicum.model.EndpointHit;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Component
 public class EndpointHitMapper {
-    public ViewStatsDto toDto(EndpointHit endpointHit) {
-        return new ViewStatsDto(endpointHit.getApp(), endpointHit.getUri(), 0);
+    public ViewStatsDto toDto(EndpointHit endpointHit, Integer hits) {
+        return ViewStatsDto.builder()
+                .app(endpointHit.getApp())
+                .uri(endpointHit.getUri())
+                .hits(hits)
+                .build();
     }
 
     public EndpointHit fromDto(EndpointHitDto endpointHitDto) {
-        return new EndpointHit(null,
-                endpointHitDto.getApp(),
-                endpointHitDto.getUri(),
-                endpointHitDto.getIp(),
-                endpointHitDto.getTimestamp());
+        return EndpointHit.builder()
+                .id(null)
+                .app(endpointHitDto.getApp())
+                .uri(endpointHitDto.getUri())
+                .ip(endpointHitDto.getIp())
+                .timestamp(endpointHitDto.getTimestamp())
+                .build();
     }
 
-    public List<ViewStatsDto> toDto(List<EndpointHit> endpointHits) {
-        return endpointHits
-                .stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
+    public String toUri(EndpointHit endpointHit) {
+        return endpointHit.getUri();
     }
 }

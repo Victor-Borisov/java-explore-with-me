@@ -5,6 +5,7 @@ import ru.practicum.request.model.Request;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface RequestService {
 
@@ -20,7 +21,7 @@ public interface RequestService {
 
     Long getConfirmedRequests(long eventId);
 
-    Map<Long, Long> getCountConfirmedByEventIdList(List<Long> events);
+    Map<Long, Long> getCountConfirmedByEventIdSet(Set<Long> eventIds);
 
     void saveRequest(Request request);
 
