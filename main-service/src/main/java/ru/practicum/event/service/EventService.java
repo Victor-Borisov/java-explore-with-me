@@ -55,4 +55,6 @@ public interface EventService {
     Set<Event> getAllByEvents(Set<Long> events);
 
     Map<Long, Integer> getHitCountsByEventIdSet(Set<Long> eventIds);
+
+    Event getEventByIdPrivate(long eventId);
 }
