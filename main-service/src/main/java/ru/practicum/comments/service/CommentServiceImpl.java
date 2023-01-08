@@ -49,7 +49,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    @Transactional(readOnly=true)
+    @Transactional(readOnly = true)
     public CommentDto getById(long commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow(() ->
                 new NotFoundException("Comment {} not found", commentId));
@@ -59,7 +59,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    @Transactional(readOnly=true)
+    @Transactional(readOnly = true)
     public CommentDto getByIdPrivate(long userId, long commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow(() ->
                 new NotFoundException("Comment {} not found", commentId));
@@ -72,7 +72,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    @Transactional(readOnly=true)
+    @Transactional(readOnly = true)
     public List<CommentDto> getAllAdmin(Long[] users, Long[] events,
                                         LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size) {
         LocalDateTime startDate = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
@@ -98,7 +98,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    @Transactional(readOnly=true)
+    @Transactional(readOnly = true)
     public List<CommentDto> getAllByUserId(long userId) {
         log.info("Retrieved comments of user: {}", userId);
 
@@ -107,7 +107,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    @Transactional(readOnly=true)
+    @Transactional(readOnly = true)
     public List<CommentDto> getAllByEventId(long eventId) {
         log.info("Retrieved comments of event: {}", eventId);
 
@@ -126,7 +126,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    @Transactional(readOnly=true)
+    @Transactional(readOnly = true)
     public List<CommentDto> getAllPrivate(long userId, int from, int size) {
         Sort sort = Sort.sort(Comment.class).by(Comment::getCreatedOn).descending();
         List<Comment> comments = commentRepository.findAllByUserId(userId, getPageable(from, size, sort));
