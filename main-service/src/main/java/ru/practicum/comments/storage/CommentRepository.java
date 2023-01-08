@@ -11,6 +11,7 @@ import java.util.Optional;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findAllByUserId(Long userId, Pageable pageable);
+
     @Query("SELECT e FROM Comment e " +
             " WHERE e.user.id IN :users " +
             " AND e.event.id IN :events " +
