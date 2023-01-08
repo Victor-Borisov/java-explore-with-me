@@ -22,18 +22,13 @@ public interface CommentService {
 
     List<CommentDto> getAllPrivate(long userId, int from, int size);
 
-    @Transactional
     List<CommentDto> getAllByUserId(long userId);
 
-    @Transactional
     List<CommentDto> getAllByEventId(long eventId);
 
-    @Transactional
     void delete(long userId, long commentId);
 
-    @Transactional
     CommentDto updatePrivate(long userId, long commentId, UpdateCommentDto updateCommentDto);
 
-    @Transactional
     CommentDto updateAdmin(long commentId, UpdateCommentDto updateCommentDto);
 }

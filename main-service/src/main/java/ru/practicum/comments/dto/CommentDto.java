@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CommentDto {
-    private long id;
+    private Long id;
     private String text;
-    private long userId;
-    private long eventId;
+    private Long userId;
+    private Long eventId;
     private LocalDateTime createdOn;
 }

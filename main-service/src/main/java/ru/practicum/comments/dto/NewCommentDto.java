@@ -11,7 +11,7 @@ import javax.validation.constraints.Size;
 @NoArgsConstructor
 @AllArgsConstructor
 public class NewCommentDto {
-    private long eventId;
+    private Long eventId;
 
     @NotBlank
     @Size(max = 4000)
