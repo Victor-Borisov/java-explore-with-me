@@ -1,28 +1,39 @@
 package ru.practicum.comments.service;
 
 import ru.practicum.comments.dto.CommentDto;
-import ru.practicum.comments.dto.CommentShortDto;
-import ru.practicum.comments.model.Comment;
+import ru.practicum.comments.dto.NewCommentDto;
+import ru.practicum.comments.dto.UpdateCommentDto;
 
 import javax.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CommentService {
 
     @Transactional
-    Comment addComment(CommentShortDto comment, long userId, long eventId);
+    CommentDto add(NewCommentDto comment, long userId);
 
-    CommentDto getComment(long commentId);
+    CommentDto getById(long commentId);
 
-    @Transactional
-    List<Comment> getAllCommentsByUser(long userId);
+    CommentDto getByIdPrivate(long userId, long commentId);
 
-    @Transactional
-    List<Comment> getAllCommentsByEvent(long eventId);
+    List<CommentDto> getAllAdmin(Long[] users, Long[] events,
+                                     LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size);
 
-    @Transactional
-    void deleteComment(long commentId, long userId);
+    List<CommentDto> getAllPrivate(long userId, int from, int size);
 
     @Transactional
-    CommentDto updateComment(long userId, long commentId, CommentShortDto commentDto);
+    List<CommentDto> getAllByUserId(long userId);
+
+    @Transactional
+    List<CommentDto> getAllByEventId(long eventId);
+
+    @Transactional
+    void delete(long userId, long commentId);
+
+    @Transactional
+    CommentDto updatePrivate(long userId, long commentId, UpdateCommentDto updateCommentDto);
+
+    @Transactional
+    CommentDto updateAdmin(long commentId, UpdateCommentDto updateCommentDto);
 }

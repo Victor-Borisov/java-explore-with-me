@@ -2,10 +2,13 @@ package ru.practicum.comments.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.comments.dto.CommentDto;
 import ru.practicum.comments.dto.CommentMapper;
-import ru.practicum.comments.dto.CommentShortDto;
+import ru.practicum.comments.dto.NewCommentDto;
+import ru.practicum.comments.dto.UpdateCommentDto;
 import ru.practicum.comments.model.Comment;
 import ru.practicum.comments.storage.CommentRepository;
 import ru.practicum.event.model.Event;
@@ -14,10 +17,14 @@ import ru.practicum.exceptions.NotFoundException;
 import ru.practicum.exceptions.ValidationException;
 import ru.practicum.user.model.User;
 import ru.practicum.user.service.UserService;
+import ru.practicum.utils.PageableRequest;
 
 import javax.transaction.Transactional;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,44 +35,91 @@ public class CommentServiceImpl implements CommentService {
     private final EventService eventService;
     private final UserService userService;
 
+    private static final String DATE_TIME_STRING = "yyyy-MM-dd HH:mm:ss";
+
     @Override
     @Transactional
-    public Comment addComment(CommentShortDto comment, long userId, long eventId) {
+    public CommentDto add(NewCommentDto newCommentDto, long userId) {
         User user = userService.getUserById(userId);
-        Event event = eventService.getEventByIdPrivate(eventId);
+        Event event = eventService.getEventByIdPrivate(newCommentDto.getEventId());
 
-        return commentRepository.save(commentMapper.toComment(comment, user, event));
+        return commentMapper.fromComment(
+                commentRepository.save(commentMapper.fromNewCommentDto(newCommentDto, user, event))
+        );
     }
 
     @Override
-    public CommentDto getComment(long commentId) {
+    public CommentDto getById(long commentId) {
         Comment comment = commentRepository.findById(commentId).orElseThrow(() ->
                 new NotFoundException("Comment {} not found", commentId));
         log.info("Retrieved comment of user: {}", commentId);
 
-        return commentMapper.toDto(comment);
+        return commentMapper.fromComment(comment);
+    }
+
+    @Override
+    public CommentDto getByIdPrivate(long userId, long commentId) {
+        Comment comment = commentRepository.findById(commentId).orElseThrow(() ->
+                new NotFoundException("Comment {} not found", commentId));
+        if (userId != comment.getUser().getId()) {
+            throw new ValidationException("Requested comment made by another user");
+        }
+        log.info("Retrieved comment of user: {}", commentId);
+
+        return commentMapper.fromComment(comment);
+    }
+
+    @Override
+    public List<CommentDto> getAllAdmin(Long[] users, Long[] events,
+                                        LocalDateTime rangeStart, LocalDateTime rangeEnd, int from, int size) {
+        LocalDateTime startDate = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
+        LocalDateTime endDate = LocalDateTime.parse("5000-01-01 00:00:00",
+                DateTimeFormatter.ofPattern(DATE_TIME_STRING));
+        if (rangeStart != null) {
+            startDate = rangeStart;
+        }
+        if (rangeEnd != null) {
+            endDate = rangeEnd;
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new ValidationException("rangeStart must not be after rangeEnd");
+        }
+        Sort sort = Sort.sort(Comment.class).by(Comment::getCreatedOn).descending();
+        List<Comment> comments = commentRepository.findAllByUsersAndEvents(users, events,
+                startDate, endDate, getPageable(from, size, sort));
+        log.info("List of comments {} is retrieved by administrator", comments);
+
+        return comments.stream()
+                .map(commentMapper::fromComment)
+                .collect(Collectors.toList());
+    }
+
+    private Pageable getPageable(int from, int size, Sort sort) {
+        return new PageableRequest(from, size, sort);
     }
 
     @Override
     @Transactional
-    public List<Comment> getAllCommentsByUser(long userId) {
+    public List<CommentDto> getAllByUserId(long userId) {
         log.info("Retrieved comments of user: {}", userId);
 
-        return commentRepository.getAllByUserId(userId);
+        return commentRepository.getAllByUserId(userId).stream()
+                .map(commentMapper::fromComment).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public List<Comment> getAllCommentsByEvent(long eventId) {
+    public List<CommentDto> getAllByEventId(long eventId) {
         log.info("Retrieved comments of event: {}", eventId);
 
-        return commentRepository.getAllByEventId(eventId);
+        return commentRepository.getAllByEventId(eventId).stream()
+                .map(commentMapper::fromComment).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
-    public void deleteComment(long commentId, long userId) {
-        Optional<Comment> comment = commentRepository.findByIdAndUserId(userId, commentId);
+    public void delete(long userId, long commentId) {
+        Optional<Comment> comment = commentRepository.findByIdAndUserId(commentId, userId);
         if (comment.isEmpty()) {
             throw new ValidationException("Comment with specified commentId and userId not found");
         }
@@ -74,15 +128,40 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    public List<CommentDto> getAllPrivate(long userId, int from, int size) {
+        Sort sort = Sort.sort(Comment.class).by(Comment::getCreatedOn).descending();
+        List<Comment> comments = commentRepository.findAllByUserId(userId, getPageable(from, size, sort));
+        log.info("List of comments {} retrieved", comments);
+
+        return comments.stream().map(commentMapper::fromComment).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
-    public CommentDto updateComment(long userId, long commentId, CommentShortDto commentShortDto) {
+    public CommentDto updatePrivate(long userId, long commentId, UpdateCommentDto updateCommentDto) {
         Optional<Comment> comment = commentRepository.findByIdAndUserId(userId, commentId);
         if (comment.isEmpty()) {
             throw new ValidationException("Comment with specified commentId and userId not found");
         }
-        comment.get().setText(commentShortDto.getText());
+        if (userId != comment.get().getUser().getId()) {
+            throw new ValidationException("Comment can be updated only by author or administrator");
+        }
+        comment.get().setText(updateCommentDto.getText());
         log.info("Comment {} updated", commentId);
 
-        return commentMapper.toDto(commentRepository.save(comment.get()));
+        return commentMapper.fromComment(commentRepository.save(comment.get()));
+    }
+
+    @Override
+    @Transactional
+    public CommentDto updateAdmin(long commentId, UpdateCommentDto updateCommentDto) {
+        Optional<Comment> comment = commentRepository.findById(commentId);
+        if (comment.isEmpty()) {
+            throw new ValidationException("Comment with specified commentId and userId not found");
+        }
+        comment.get().setText(updateCommentDto.getText());
+        log.info("Comment {} updated", commentId);
+
+        return commentMapper.fromComment(commentRepository.save(comment.get()));
     }
 }

@@ -8,6 +8,7 @@ import ru.practicum.event.model.Event;
 import ru.practicum.user.model.User;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -31,4 +32,7 @@ public class Comment {
     @ManyToOne
     @JoinColumn(name = "event_id", referencedColumnName = "event_id")
     private Event event;
+
+    @Column(name = "create_date")
+    private LocalDateTime createdOn;
 }
