@@ -1,7 +1,7 @@
 # java-explore-with-me
 Diploma project in yandex.practicum
 
-[PULL REQUEST](https://github.com/Victor-Borisov/java-explore-with-me/pull/2)
+[PULL REQUEST](https://github.com/Victor-Borisov/java-explore-with-me/pull/4)
 
 ## ER-diagrams
 

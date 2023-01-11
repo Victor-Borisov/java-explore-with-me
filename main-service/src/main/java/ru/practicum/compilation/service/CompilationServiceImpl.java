@@ -18,10 +18,7 @@ import ru.practicum.exceptions.NotFoundException;
 import ru.practicum.request.service.RequestService;
 import ru.practicum.utils.PageableRequest;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -66,13 +63,17 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     @Transactional
     public CompilationDto add(NewCompilationDto newCompilationDto) {
+        Map<Long, Long> confirmedRequests = new HashMap<>();
+        Map<Long, Integer>  hitCounts = new HashMap<>();
         Compilation compilation = compilationMapper.fromNewCompilationDto(newCompilationDto);
+        compilation = compilationRepository.save(compilation);
         Set<Event> eventList = eventService.getAllByEvents(newCompilationDto.getEvents());
         compilation.setEvents(eventList);
-        compilation = compilationRepository.save(compilation);
-        Set<Long> eventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toSet());
-        Map<Long, Long> confirmedRequests = requestService.getCountConfirmedByEventIdSet(eventIds);
-        Map<Long, Integer>  hitCounts = eventService.getHitCountsByEventIdSet(eventIds);
+        if (eventList != null && !eventList.isEmpty()) {
+            Set<Long> eventIds = compilation.getEvents().stream().map(eventMapper::toId).collect(Collectors.toSet());
+            confirmedRequests = requestService.getCountConfirmedByEventIdSet(eventIds);
+            hitCounts = eventService.getHitCountsByEventIdSet(eventIds);
+        }
         log.info("Compilation {} added", compilation);
 
         return compilationMapper.toDto(compilation, confirmedRequests, hitCounts);

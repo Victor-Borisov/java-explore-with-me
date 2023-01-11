@@ -32,7 +32,7 @@ public class EventAdminController {
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
             @PositiveOrZero @RequestParam(defaultValue = "0") int from,
             @Positive @RequestParam(defaultValue = "10") int size) {
-        log.info("Called add");
+        log.info("Called getAll");
 
         return eventService.getAllByAdmin(users, states, categories, rangeStart,
                 rangeEnd, from, size);
